@@ -14,19 +14,79 @@ export async function uploadPendingOrders(orders: any[]) {
 
     const api = await createEnhancedAPI();
     
-    // Format orders for backend
-    const formattedOrders = orders.map(order => ({
-      supplier_code: order.supplier_code,
-      user_id: order.userid,
-      barcode: order.barcode,
-      quantity: order.quantity,
-      rate: order.rate,
-      mrp: order.mrp,
-      order_date: order.order_date,
-      created_at: order.created_at
-    }));
+    // Format orders for backend with special handling for manual entries
+    const formattedOrders = orders.map((order, index) => {
+      // Check if this is a manual entry - handle both number and string
+      const isManualEntry = order.is_manual_entry === 1 || order.is_manual_entry === '1' || order.is_manual_entry === true;
+      
+      console.log(`📦 Order ${index + 1}:`, {
+        barcode: order.barcode,
+        is_manual_entry: order.is_manual_entry,
+        isManualEntry: isManualEntry,
+        product_name: order.product_name,
+        itemcode: order.itemcode
+      });
+      
+      // Base order structure matching acc_purchaseorderdetails requirements
+      const formattedOrder: any = {
+        supplier_code: order.supplier_code,
+        user_id: order.userid,
+        barcode: order.barcode,
+        quantity: order.quantity,
+        rate: order.rate,
+        mrp: order.mrp,
+        order_date: order.order_date,
+        created_at: order.created_at,
+        discount: 0,
+        pnfcharges: 0,
+        exceiseduty: 0,
+        salestax: 0,
+        freightcharge: 0,
+        othercharges: 0,
+        cessoned: 0,
+        cess: 0,
+        taxcode: 'NT', // Default tax code
+      };
 
-    console.log("📦 Formatted orders for upload:", formattedOrders);
+      // 🎯 CRITICAL FIX: Special handling for manual entries
+      if (isManualEntry) {
+        // For manual entries: 
+        // - code: use barcode (the barcode user entered)
+        // - item: product_name (the name user entered) ✅ FIX: Use product_name, not item
+        // - ioflag: -100 (identifies manual entry)
+        formattedOrder.code = order.barcode;
+        formattedOrder.item = order.product_name || ''; // ✅ Use product_name from orders_to_sync
+        formattedOrder.ioflag = -100;
+        
+        console.log("🔧 Manual entry RAW from DB:", {
+          barcode: order.barcode,
+          product_name: order.product_name,
+          is_manual_entry: order.is_manual_entry
+        });
+        console.log("🔧 Manual entry formatted:", {
+          barcode: order.barcode,
+          code: formattedOrder.code,
+          item: formattedOrder.item, // ✅ This should now show actual product name
+          ioflag: formattedOrder.ioflag
+        });
+      } else {
+        // For regular products:
+        // - code: use itemcode from product database
+        // - item: empty (backend populates from product master)
+        // - ioflag: 0 (regular product)
+        formattedOrder.code = order.itemcode;
+        formattedOrder.item = '';
+        formattedOrder.ioflag = 0;
+      }
+
+      return formattedOrder;
+    });
+
+    console.log("📦 Formatted orders for upload:", formattedOrders.length);
+    console.log("🔢 Manual entries count:", formattedOrders.filter(o => o.ioflag === -100).length);
+    console.log("📋 Regular entries count:", formattedOrders.filter(o => o.ioflag === 0).length);
+    console.log("🔍 Sample manual entry:", formattedOrders.find(o => o.ioflag === -100));
+    console.log("🔍 Sample regular entry:", formattedOrders.find(o => o.ioflag === 0));
 
     const res = await api.post("/upload-orders", { 
       orders: formattedOrders,
@@ -35,7 +95,7 @@ export async function uploadPendingOrders(orders: any[]) {
 
     console.log("✅ Upload response:", res.data);
 
-    // FIXED: Handle different response formats from backend
+    // Handle different response formats from backend
     if (res.data) {
       // Case 1: Backend returns { success: true, message: "..." }
       if (res.data.success === true) {

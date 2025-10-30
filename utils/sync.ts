@@ -77,18 +77,36 @@ export const getLocalDataStats = async () => {
   }
 };
 
-// Get pending orders
+// 🎯 CRITICAL FIX: Get pending orders with correct product_name handling
 export const getPendingOrders = async () => {
   const db = getDatabase();
   try {
     const orders = await db.getAllAsync(
-      `SELECT o.*, p.name as product_name 
+      `SELECT 
+         o.*,
+         COALESCE(o.product_name, p.name) as product_name
        FROM orders_to_sync o 
        LEFT JOIN product_data p ON o.barcode = p.barcode 
        WHERE o.sync_status = ? 
        ORDER BY o.created_at`,
       ['pending']
     );
+    
+    // 🔍 Debug log
+    console.log("\n🔍 === getPendingOrders() DEBUG ===");
+    console.log(`Total orders fetched: ${orders.length}`);
+    
+    const manualEntries = orders.filter((o: any) => o.is_manual_entry === 1);
+    if (manualEntries.length > 0) {
+      console.log(`\nManual entries (${manualEntries.length}):`);
+      manualEntries.forEach((entry: any, idx: number) => {
+        console.log(`  ${idx + 1}. barcode: ${entry.barcode}`);
+        console.log(`     product_name: "${entry.product_name}"`);
+        console.log(`     is_manual_entry: ${entry.is_manual_entry}`);
+      });
+    }
+    console.log("🔍 === END DEBUG ===\n");
+    
     return orders;
   } catch (error) {
     console.error("❌ Error getting pending orders:", error);

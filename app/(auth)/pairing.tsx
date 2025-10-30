@@ -175,41 +175,41 @@ export default function Pairing() {
       style={{ flex: 1 }}
     >
       {/* Status Bar */}
-      <StatusBar backgroundColor="#FB923C" />
+      <StatusBar backgroundColor="#C8E6C9" />
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-1 justify-center items-center px-5 py-10">
+          <View className="flex-1 justify-center items-center px-5 py-10 bg-[#F8F9FA]">
             {/* Header Section */}
             <View className="items-center w-full">
               <Image
-                source={require("../../assets/images/icon.png")}
+                source={require("../../assets/images/icon.jpg")}
                 style={{
                   width: 80,
                   height: 80,
                   marginBottom: 12,
                 }}
               />
-              <Text className="text-2xl font-bold mb-2 text-gray-800">
-                MagicPDA
+              <Text className="text-2xl font-bold mb-2 text-[#1B5E20]">
+                TaskPMS
               </Text>
-              <Text className="text-gray-600 mb-8 text-center">
+              <Text className="text-[#558B2F] mb-8 text-center">
                 Connect to your server
               </Text>
 
               {/* Main Form Card */}
               <View className="w-full max-w-[360px] bg-white rounded-2xl p-6 shadow-lg">
-                <Text className="text-center text-blue-600 text-xl font-semibold mb-6">
+                <Text className="text-center text-[#2E7D32] text-xl font-semibold mb-6">
                   Server Connection
                 </Text>
 
                 {/* Connection Icon */}
                 <View className="items-center mb-6">
-                  <Ionicons name="server" size={48} color="#FB923C" />
-                  <Text className="text-gray-600 text-center mt-3">
+                  <Ionicons name="server" size={48} color="#4CAF50" />
+                  <Text className="text-[#616161] text-center mt-3">
                     Enter your server details below
                   </Text>
                 </View>
@@ -218,7 +218,7 @@ export default function Pairing() {
                 <View className="gap-y-5">
                   {/* IP Address Field */}
                   <View>
-                    <Text className="text-gray-700 font-semibold mb-2">
+                    <Text className="text-[#2E7D32] font-semibold mb-2">
                       Server IP Address
                     </Text>
                     <TextInput
@@ -232,7 +232,7 @@ export default function Pairing() {
                       autoCapitalize="none"
                       autoCorrect={false}
                       className={`border rounded-lg px-4 py-4 text-base bg-white ${
-                        ipError ? "border-red-400" : "border-orange-300"
+                        ipError ? "border-red-400" : "border-[#A5D6A7]"
                       }`}
                     />
                     {ipError && (
@@ -240,14 +240,14 @@ export default function Pairing() {
                         Please enter a valid IP address
                       </Text>
                     )}
-                    <Text className="text-gray-500 text-xs mt-1">
+                    <Text className="text-[#757575] text-xs mt-1">
                       Example: 192.168.1.100 (no http:// or :8000)
                     </Text>
                   </View>
 
                   {/* Password Field */}
                   <View>
-                    <Text className="text-gray-700 font-semibold mb-2">
+                    <Text className="text-[#2E7D32] font-semibold mb-2">
                       Pairing Password
                     </Text>
                     <View className="relative">
@@ -262,7 +262,7 @@ export default function Pairing() {
                         autoCapitalize="none"
                         autoCorrect={false}
                         className={`border rounded-lg px-4 py-4 pr-12 text-base bg-white ${
-                          passwordError ? "border-red-400" : "border-orange-300"
+                          passwordError ? "border-red-400" : "border-[#A5D6A7]"
                         }`}
                       />
                       <TouchableOpacity
@@ -281,7 +281,7 @@ export default function Pairing() {
                         Password is required
                       </Text>
                     )}
-                    <Text className="text-gray-500 text-xs mt-1">
+                    <Text className="text-[#757575] text-xs mt-1">
                       Default password: IMC-MOBILE
                     </Text>
                   </View>
@@ -291,7 +291,7 @@ export default function Pairing() {
                 <Pressable
                   onPress={handleConnect}
                   className={`rounded-lg py-4 mt-8 shadow-lg ${
-                    loading ? "bg-orange-300" : "bg-orange-500"
+                    loading ? "bg-[#A5D6A7]" : "bg-[#4CAF50]"
                   }`}
                   disabled={loading}
                 >
@@ -310,11 +310,11 @@ export default function Pairing() {
                 </Pressable>
 
                 {/* Help Section */}
-                <View className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <Text className="text-gray-700 font-semibold mb-2">
+                <View className="mt-6 p-4 bg-[#E8F5E9] rounded-lg">
+                  <Text className="text-[#2E7D32] font-semibold mb-2">
                     💡 Connection Help
                   </Text>
-                  <Text className="text-gray-600 text-sm leading-5">
+                  <Text className="text-[#558B2F] text-sm leading-5">
                     • Both phone and computer must be on the same WiFi network
                     {"\n"}• Make sure the server is running on your computer
                     {"\n"}• Check the server console for the correct IP address
@@ -327,7 +327,7 @@ export default function Pairing() {
 
             {/* Footer */}
             <View className="mt-8">
-              <Text className="text-sm text-gray-400 text-center">
+              <Text className="text-sm text-[#757575] text-center">
                 Powered by IMC Business Solutions
               </Text>
             </View>

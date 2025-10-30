@@ -1,226 +1,279 @@
 import { deleteUserid, getUserid, logout } from "@/utils/auth";
 import { clearPairing } from "@/utils/pairing";
 import { Ionicons } from "@expo/vector-icons";
-import MaskedView from '@react-native-masked-view/masked-view';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Platform, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Animated,
+  Dimensions,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Toast from "react-native-toast-message";
+
+const { width } = Dimensions.get("window");
+const cardWidth = (width - 60) / 2;
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [username, setUsername] = useState(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnims = [
+    useRef(new Animated.Value(0)).current,
+    useRef(new Animated.Value(0)).current,
+  ];
 
   useEffect(() => {
-    const fetchUsername = async () => {
+    const loadUser = async () => {
       const user = await getUserid();
       setUsername(user);
     };
+    loadUser();
 
-    fetchUsername();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start(() => {
+      Animated.stagger(
+        100,
+        scaleAnims.map((anim) =>
+          Animated.spring(anim, {
+            toValue: 1,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true,
+          })
+        )
+      ).start();
+    });
   }, []);
 
   const handleLogout = async () => {
-    Alert.alert(
-      "Confirm Logout",
-      "Do you want to Logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            await logout();
-            await clearPairing();
-            await deleteUserid();
-            router.replace("/(auth)/pairing");
-            Toast.show({
-              type: "success",
-              text1: "Logged out successfully",
-              visibilityTime: 3000,
-            });
-          },
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          await clearPairing();
+          await deleteUserid();
+          router.replace("/(auth)/pairing");
+          Toast.show({
+            type: "success",
+            text1: "Logged out successfully",
+            visibilityTime: 2500,
+          });
         },
-      ],
-      { cancelable: true }
-    );
+      },
+    ]);
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="#C8E6C9" />
       
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.logoContainer}>
-            <MaskedView
-              style={styles.logoMask}
-              maskElement={
-                <Text style={styles.logoText}>MagicPDA</Text>
-              }
-            >
-              <LinearGradient
-                colors={['#fbd23c', '#ee7219', '#141bec']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gradientBackground}
-              />
-            </MaskedView>
-           <MaskedView
-              style={styles.subtitleMask}
-              maskElement={
-                <Text style={styles.subtitleText}>
-                  Your Smart PDA - Making productivity magical
-                </Text>
-            }
-          >
-            <LinearGradient
-              colors={['#f0770dff', '#ee7219', '#141bec']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ flex: 1 }}
-            />
-            </MaskedView>
+      <LinearGradient
+        colors={["#C8E6C9", "#A5D6A7"]}
+        style={styles.header}
+      >
+        <SafeAreaView>
+          <View style={styles.headerContent}>
+            <TouchableOpacity style={styles.menuButton}>
+              <Ionicons name="menu" size={26} color="#1B5E20" />
+            </TouchableOpacity>
+            
+            <View style={styles.titleContainer}>
+              <Text style={styles.appTitle}>Tracker</Text>
+              <View style={styles.titleUnderline} />
+            </View>
+            
+            <TouchableOpacity onPress={handleLogout} style={styles.powerButton}>
+              <Ionicons name="power" size={26} color="#C62828" />
+            </TouchableOpacity>
           </View>
           
-          <TouchableOpacity
-            onPress={handleLogout}
-            style={styles.logoutButton}
-          >
-            <Ionicons name="log-out-outline" size={24} color="#e02222ff" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Welcome Card */}
-        <View style={styles.welcomeSection}>
-          <View style={styles.welcomeCard}>
-            <View style={styles.avatarContainer}>
+          <Animated.View style={[styles.welcomeSection, { opacity: fadeAnim }]}>
+            <View style={styles.greetingRow}>
+              <Text style={styles.greeting}>Hi, {username || "User"}!</Text>
+              <View style={styles.waveEmoji}>
+                <Text style={styles.waveText}>👋</Text>
+              </View>
+            </View>
+            
+            <View style={styles.stockCard}>
               <LinearGradient
-                colors={['#fbd23c', '#ee7219']}
-                style={styles.avatarGradient}
+                colors={["rgba(255,255,255,0.95)", "rgba(255,255,255,0.85)"]}
+                style={styles.stockCardGradient}
               >
-                <Ionicons name="person" size={24} color="white" />
+                <View style={styles.stockCardLeft}>
+                  <View style={styles.trendingIconContainer}>
+                    <Ionicons name="trending-up" size={22} color="#4CAF50" />
+                  </View>
+                  <View>
+                    <Text style={styles.stockText}>Market Activity</Text>
+                    <Text style={styles.stockSubtext}>Real-time tracking</Text>
+                  </View>
+                </View>
+                <View style={styles.liveIndicator}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveText}>LIVE</Text>
+                </View>
               </LinearGradient>
             </View>
-            <View style={styles.welcomeText}>
-              <Text style={styles.greetingText}>Welcome back!</Text>
-              <Text style={styles.usernameText}>
-                {username || "User"}
-              </Text>
-            </View>
-          </View>
-        </View>
+          </Animated.View>
+        </SafeAreaView>
+      </LinearGradient>
 
-        {/* Quick Actions Header */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <Text style={styles.sectionSubtitle}>
-            Choose what you'd like to do
-          </Text>
-        </View>
-
-        {/* 2x2 Grid */}
-        <View style={styles.gridContainer}>
-          {/* First Row */}
-          <View style={styles.gridRow}>
+      {/* Main Content */}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.cardsGrid}>
+          {/* Download Card */}
+          <Animated.View
+            style={[
+              styles.cardWrapper,
+              {
+                opacity: scaleAnims[0],
+                transform: [
+                  {
+                    scale: scaleAnims[0].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.8, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
             <TouchableOpacity
-              style={styles.gridItem}
-              onPress={() => router.push("/(main)/orders")}
-            >
-              <View style={styles.cardContent}>
-                <View style={styles.iconContainer}>
-                  <LinearGradient
-                    colors={['#10B981', '#059669']}
-                    style={styles.iconGradient}
-                  >
-                    <Ionicons name="receipt-outline" size={32} color="white" />
-                  </LinearGradient>
-                </View>
-                <View style={styles.cardTextContainer}>
-                  <Text style={styles.cardTitle}>Orders</Text>
-                  <Text style={styles.cardDescription}>Entry & Upload</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.gridItem}
+              activeOpacity={0.85}
               onPress={() => router.push("/(main)/download")}
             >
-              <View style={styles.cardContent}>
-                <View style={styles.iconContainer}>
-                  <LinearGradient
-                    colors={['#3B82F6', '#1E40AF']}
-                    style={styles.iconGradient}
-                  >
-                    <Ionicons name="cloud-download-outline" size={32} color="white" />
-                  </LinearGradient>
+              <LinearGradient
+                colors={["#E3F2FD", "#BBDEFB"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.card}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardIconContainer}>
+                    <LinearGradient
+                      colors={["#2196F3", "#1976D2"]}
+                      style={styles.iconGradient}
+                    >
+                      <Ionicons name="cloud-download-outline" size={24} color="#FFFFFF" />
+                    </LinearGradient>
+                  </View>
+                  <View style={styles.cardBadge}>
+                    <View style={styles.badgeDot} />
+                  </View>
                 </View>
-                <View style={styles.cardTextContainer}>
+                
+                <View style={styles.cardMainContent}>
+                  <View style={styles.featureIconWrapper}>
+                    <View style={styles.iconRing}>
+                      <Ionicons name="arrow-down-circle" size={52} color="#1976D2" />
+                    </View>
+                  </View>
+                </View>
+                
+                <View style={styles.cardFooter}>
                   <Text style={styles.cardTitle}>Download</Text>
-                  <Text style={styles.cardDescription}>Sync Data</Text>
+                  <Text style={styles.cardSubtitle}>Sync stock data</Text>
+                  <View style={styles.cardArrow}>
+                    <Ionicons name="arrow-forward" size={16} color="#1976D2" />
+                  </View>
                 </View>
-              </View>
+              </LinearGradient>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
 
-          {/* Second Row */}
-          <View style={styles.gridRow}>
+          {/* Tracker Card */}
+          <Animated.View
+            style={[
+              styles.cardWrapper,
+              {
+                opacity: scaleAnims[1],
+                transform: [
+                  {
+                    scale: scaleAnims[1].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.8, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
             <TouchableOpacity
-              style={styles.gridItem}
+              activeOpacity={0.85}
               onPress={() => router.push("/(main)/tracker")}
             >
-              <View style={styles.cardContent}>
-                <View style={styles.iconContainer}>
-                  <LinearGradient
-                    colors={['#F59E0B', '#D97706']}
-                    style={styles.iconGradient}
-                  >
-                    <Ionicons name="analytics-outline" size={32} color="white" />
-                  </LinearGradient>
+              <LinearGradient
+                colors={["#E8F5E9", "#C8E6C9"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.card}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardIconContainer}>
+                    <LinearGradient
+                      colors={["#4CAF50", "#388E3C"]}
+                      style={styles.iconGradient}
+                    >
+                      <Ionicons name="stats-chart-outline" size={24} color="#FFFFFF" />
+                    </LinearGradient>
+                  </View>
+                  <View style={styles.cardBadge}>
+                    <View style={styles.badgeDot} />
+                  </View>
                 </View>
-                <View style={styles.cardTextContainer}>
+                
+                <View style={styles.cardMainContent}>
+                  <View style={styles.featureIconWrapper}>
+                    <View style={styles.iconRing}>
+                      <Ionicons name="analytics" size={52} color="#388E3C" />
+                    </View>
+                  </View>
+                </View>
+                
+                <View style={styles.cardFooter}>
                   <Text style={styles.cardTitle}>Tracker</Text>
-                  <Text style={styles.cardDescription}>Track Progress</Text>
+                  <Text style={styles.cardSubtitle}>Monitor stocks</Text>
+                  <View style={styles.cardArrow}>
+                    <Ionicons name="arrow-forward" size={16} color="#388E3C" />
+                  </View>
                 </View>
-              </View>
+              </LinearGradient>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.gridItem}
-              onPress={() => router.push("/(main)/settings")}
-            >
-              <View style={styles.cardContent}>
-                <View style={styles.iconContainer}>
-                  <LinearGradient
-                    colors={['#8B5CF6', '#7C3AED']}
-                    style={styles.iconGradient}
-                  >
-                    <Ionicons name="settings-outline" size={32} color="white" />
-                  </LinearGradient>
-                </View>
-                <View style={styles.cardTextContainer}>
-                  <Text style={styles.cardTitle}>Settings</Text>
-                  <Text style={styles.cardDescription}>App Settings</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
 
         {/* Footer */}
-        <Text style={styles.footer}>
-          Powered by IMC Business Solutions .V2
-        </Text>
-        
+        <View style={styles.footerCard}>
+          <LinearGradient
+            colors={["#ffffffff", "#F5F5F5"]}
+            style={styles.footerGradient}
+          >
+            <Text style={styles.footerTitle}>IMCB Solutions LLP</Text>
+            <View style={styles.footerDivider} />
+            <Text style={styles.footerText}>All rights reserved © 2025</Text>
+          </LinearGradient>
+        </View>
       </ScrollView>
     </View>
   );
@@ -229,223 +282,291 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#F8F9FA",
   },
-  
   header: {
-    backgroundColor: "white",
-    paddingTop: Platform.OS === 'android' ? 60 : 50,
-    paddingBottom: Platform.OS === 'android' ? 30 : 25,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#E5E7EB",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    borderBottomLeftRadius: 35,
+    borderBottomRightRadius: 35,
+    paddingBottom: 28,
+    shadowColor: "#2E7D32",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 10 : 10,
+    marginBottom: 24,
   },
-  
-  logoContainer: {
-    flex: 1,
-    alignItems: "flex-start",
-    paddingTop: Platform.OS === 'android' ? 5 : 1,
+  menuButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  
-  logoMask: {
-    height: Platform.OS === 'android' ? 40 : 35,
-    width: Platform.OS === 'android' ? 180 : 160,
-    marginBottom: Platform.OS === 'android' ? 6 : 4,
+  titleContainer: {
+    alignItems: "center",
   },
-  
-  logoText: {
-    fontSize: Platform.OS === 'android' ? 32 : 30,
+  appTitle: {
+    fontSize: 24,
     fontWeight: "800",
+    color: "#1B5E20",
     letterSpacing: 1,
-    backgroundColor: 'transparent',
-    textAlign: 'center',
-    color: 'black',
-    marginRight: 20,
-    paddingTop: Platform.OS === 'android' ? 2 : 5,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
+    textTransform: "uppercase",
   },
-  
-  subtitleMask: {
-    height: Platform.OS === 'android' ? 20 : 16,
-    width: '100%',
+  titleUnderline: {
+    width: 40,
+    height: 3,
+    backgroundColor: "#2E7D32",
+    borderRadius: 2,
+    marginTop: 4,
   },
-  
-  subtitleText: {
-    fontSize: Platform.OS === 'android' ? 14 : 13,
+  powerButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  welcomeSection: {
+    paddingHorizontal: 20,
+  },
+  greetingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  greeting: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: "#1B5E20",
+    marginRight: 8,
+  },
+  waveEmoji: {
+    marginLeft: 4,
+  },
+  waveText: {
+    fontSize: 26,
+  },
+  stockCard: {
+    borderRadius: 18,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  stockCardGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+  },
+  stockCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  trendingIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(76, 175, 80, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  stockText: {
+    fontSize: 16,
+    color: "#1B5E20",
+    fontWeight: "700",
+  },
+  stockSubtext: {
+    fontSize: 12,
+    color: "#558B2F",
     fontWeight: "500",
-    marginTop: Platform.OS === 'android' ? 0 : 2,
-    backgroundColor: 'transparent',
-    color:'black',
-    paddingTop: Platform.OS === 'android' ? 0 : 1,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
+    marginTop: 2,
   },
-  
-  gradientBackground: {
-    flex: 1,
+  liveIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(76, 175, 80, 0.15)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
   },
-  
-  logoutButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#4CAF50",
+    shadowColor: "#4CAF50",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  
+  liveText: {
+    fontSize: 11,
+    color: "#2E7D32",
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
   scrollView: {
     flex: 1,
   },
-  
-  scrollContent: {
-    paddingBottom: 30,
-  },
-  
-  welcomeSection: {
-    paddingHorizontal: 20,
-    paddingTop: 25,
-    paddingBottom: 30,
-  },
-  
-  welcomeCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
+  content: {
     padding: 20,
+    paddingTop: 80,
+  },
+  cardsGrid: {
     flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 16,
+    marginBottom: 20,
+  },
+  cardWrapper: {
+    width: cardWidth,
+  },
+  card: {
+    borderRadius: 24,
+    padding: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.19,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    minHeight: 220,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.8)",
   },
-  
-  avatarContainer: {
-    marginRight: 16,
-  },
-  
-  avatarGradient: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  
-  welcomeText: {
-    flex: 1,
-  },
-  
-  greetingText: {
-    fontSize: 16,
-    color: "#6B7280",
-    marginBottom: 2,
-  },
-  
-  usernameText: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  
-  sectionHeader: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 4,
-  },
-  
-  sectionSubtitle: {
-    fontSize: 15,
-    color: "#6B7280",
-  },
-  
-  gridContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  
-  gridRow: {
+  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15,
+    alignItems: "flex-start",
+    marginBottom: 8,
   },
-  
-  gridItem: {
-    backgroundColor: "white",
-    borderRadius: 16,
+  cardIconContainer: {
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
     elevation: 4,
-    width: '47%',
-    height: 140,
   },
-  
-  gridItemPressed: {
-    opacity: 0.95,
-    transform: [{ scale: 0.98 }],
-  },
-  
-  cardContent: {
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    height: "100%",
-  },
-  
-  iconContainer: {
-    marginBottom: 12,
-  },
-  
   iconGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
-  
-  cardTextContainer: {
+  cardBadge: {
+    width: 10,
+    height: 10,
+  },
+  badgeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255, 255, 255, 1)",
+  },
+  cardMainContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: 16,
+  },
+  featureIconWrapper: {
+    justifyContent: "center",
     alignItems: "center",
   },
-  
+  iconRing: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(255,255,255,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.8)",
+  },
+  cardFooter: {
+    marginTop: 8,
+    position: "relative",
+  },
   cardTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
+    fontWeight: "800",
+    color: "#212121",
     marginBottom: 4,
-    textAlign: "center",
   },
-  
-  cardDescription: {
+  cardSubtitle: {
     fontSize: 13,
-    color: "#6B7280",
-    textAlign: "center",
+    fontWeight: "600",
+    color: "#616161",
   },
-  
-  footer: {
-    textAlign: "center",
-    color: "#9CA3AF",
-    fontSize: Platform.OS === 'android' ? 14 : 13,
-    marginTop: 40,
-    fontWeight: "400",
-    includeFontPadding: false,
+  cardArrow: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  footerCard: {
+    borderRadius: 20,
+    overflow: "hidden",
+    marginTop: 8,
+    marginBottom: 20,
+    shadowColor: "#070707ff",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  footerGradient: {
+    padding: 94,
+    alignItems: "center",
+  },
+  footerTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#2E7D32",
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  footerDivider: {
+    width: 60,
+    height: 2,
+    backgroundColor: "#A5D6A7",
+    borderRadius: 1,
+    marginBottom: 8,
+  },
+  footerText: {
+    fontSize: 12,
+    color: "#757575",
+    fontWeight: "600",
   },
 });
