@@ -31,8 +31,8 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="taskpms"/>
-        <data android:scheme="exp+taskpms"/>
+        <data android:scheme="tracker"/>
+        <data android:scheme="exp+tracker-app"/>
       </intent-filter>
     </activity>
   </application>

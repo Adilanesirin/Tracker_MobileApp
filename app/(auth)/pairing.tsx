@@ -169,6 +169,10 @@ export default function Pairing() {
     }
   };
 
+  const handleBackToLicense = () => {
+    router.push("/(auth)/license");
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -176,6 +180,21 @@ export default function Pairing() {
     >
       {/* Status Bar */}
       <StatusBar backgroundColor="#C8E6C9" />
+
+      {/* Back Button */}
+      <TouchableOpacity
+        onPress={handleBackToLicense}
+        className="absolute top-12 left-5 z-10 bg-white rounded-full p-2 shadow-lg"
+        style={{
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+          elevation: 5,
+        }}
+      >
+        <Ionicons name="arrow-back" size={24} color="#4CAF50" />
+      </TouchableOpacity>
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
@@ -186,15 +205,16 @@ export default function Pairing() {
             {/* Header Section */}
             <View className="items-center w-full">
               <Image
-                source={require("../../assets/images/icon.jpg")}
+                source={require("../../assets/images/tracker.png")}
                 style={{
                   width: 80,
                   height: 80,
                   marginBottom: 12,
+                  marginTop: 20,
                 }}
               />
               <Text className="text-2xl font-bold mb-2 text-[#1B5E20]">
-                TaskPMS
+                TRACKER
               </Text>
               <Text className="text-[#558B2F] mb-8 text-center">
                 Connect to your server

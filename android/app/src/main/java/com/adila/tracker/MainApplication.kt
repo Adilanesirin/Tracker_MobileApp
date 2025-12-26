@@ -1,4 +1,4 @@
-package com.taskpms.app
+package com.adila.tracker
 
 import android.app.Application
 import android.content.res.Configuration

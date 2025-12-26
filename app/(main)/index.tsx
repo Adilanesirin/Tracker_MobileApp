@@ -89,8 +89,11 @@ export default function HomeScreen() {
       >
         <SafeAreaView>
           <View style={styles.headerContent}>
-            <TouchableOpacity style={styles.menuButton}>
-              <Ionicons name="menu" size={26} color="#1B5E20" />
+            <TouchableOpacity 
+              style={styles.settingsButton}
+              onPress={() => router.push("/(main)/settings")}
+            >
+              <Ionicons name="settings" size={26} color="#1B5E20" />
             </TouchableOpacity>
             
             <View style={styles.titleContainer}>
@@ -302,7 +305,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 10 : 10,
     marginBottom: 24,
   },
-  menuButton: {
+  settingsButton: {
     width: 48,
     height: 48,
     borderRadius: 14,

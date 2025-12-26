@@ -1,20 +1,25 @@
 {
   "expo": {
-    "name": "TaskPMS",
-    "slug": "IMCSync",
+    "name": "Tracker",
+    "slug": "Tracker-APP",
     "owner": "adila2005.2",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.jpg",
-    "scheme": "taskpms",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/images/greenicon.png",
+    "scheme": "tracker",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "jsEngine": "hermes",
-    "primaryColor": "#FF8C00",
-    "backgroundColor": "#FFFFFF",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "native",
+      "backgroundColor": "#FFFFFF"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.taskpms.app",
+      "bundleIdentifier": "com.adila.tracker",
+      "buildNumber": "1",
+      "icon": "./assets/images/greenicon.png",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
@@ -30,9 +35,11 @@
       }
     },
     "android": {
+      "versionCode": 3,
+      "icon": "./assets/images/greenicon.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.jpg",
-        "backgroundColor": "#FF8C00"
+        "foregroundImage": "./assets/images/greenicon.png",
+        "backgroundColor": "#FFFFFF"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -44,7 +51,7 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "package": "com.taskpms.app",
+      "package": "com.adila.tracker",
       "allowBackup": false,
       "requestLegacyExternalStorage": true,
       "allowExternalStorage": true,
@@ -55,30 +62,33 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.jpg"
+      "favicon": "./assets/images/greenicon.png"
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.jpg",
-          "imageWidth": 100,
-          "resizeMode": "contain",
-          "backgroundColor": "#fff"
-        }
-      ],
       "expo-secure-store",
       "expo-sqlite",
-      "./plugin/withNetworkConfig"
+      "./plugin/withNetworkConfig",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "requestLegacyExternalStorage": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
+    "cli": {
+      "appVersionSource": "local"
+    },
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "ee603ddc-2674-4167-aea0-dabe67fd77e3"
+        "projectId": "129240fa-84a0-4107-a7d2-f20884efa446"
       }
     }
   }

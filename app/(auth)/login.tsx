@@ -2,6 +2,8 @@ import { createDebugAPI, createEnhancedAPI } from "@/utils/api";
 import { saveToken, saveUserid } from "@/utils/auth";
 import { analyzeServerError, debugLoginPayloads } from "@/utils/debug";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Application from "expo-application";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -41,6 +43,162 @@ export default function Login() {
     });
   };
 
+  const getDeviceId = async () => {
+    try {
+      let id;
+      if (Platform.OS === "android") {
+        id = Application.androidId;
+        if (!id) {
+          id = await AsyncStorage.getItem("deviceId");
+          if (!id) {
+            id = `android_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            await AsyncStorage.setItem("deviceId", id);
+          }
+        }
+      } else if (Platform.OS === "ios") {
+        id = await Application.getIosIdForVendorAsync();
+        if (!id) {
+          id = await AsyncStorage.getItem("deviceId");
+          if (!id) {
+            id = `ios_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            await AsyncStorage.setItem("deviceId", id);
+          }
+        }
+      } else {
+        id = await AsyncStorage.getItem("deviceId");
+        if (!id) {
+          id = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          await AsyncStorage.setItem("deviceId", id);
+        }
+      }
+      return id;
+    } catch (error) {
+      console.error("Error getting device ID:", error);
+      return null;
+    }
+  };
+
+  const validateLicenseWithAPI = async () => {
+    try {
+      console.log("=== LICENSE VALIDATION START ===");
+      
+      const storedLicenseKey = await AsyncStorage.getItem("licenseKey");
+      const storedClientId = await AsyncStorage.getItem("clientId");
+      
+      console.log("Stored License Key:", storedLicenseKey);
+      console.log("Stored Client ID:", storedClientId);
+      
+      if (!storedLicenseKey) {
+        console.log("NO LICENSE KEY FOUND");
+        return { 
+          valid: false, 
+          message: "No license found. Please activate your license first.",
+          needsActivation: true
+        };
+      }
+
+      if (!storedClientId) {
+        console.log("NO CLIENT ID FOUND");
+        return { 
+          valid: false, 
+          message: "Client ID missing. Please reactivate your license.",
+          needsActivation: true
+        };
+      }
+
+      const currentDeviceId = await getDeviceId();
+      console.log("Current Device ID:", currentDeviceId);
+      
+      if (!currentDeviceId) {
+        return { valid: false, message: "Device ID not available" };
+      }
+
+      const CHECK_LICENSE_API = `https://activate.imcbs.com/mobileapp/api/project/tasktracker/`;
+      
+      console.log("Calling API:", CHECK_LICENSE_API);
+      const response = await fetch(CHECK_LICENSE_API, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.log("API FAILED");
+        return { 
+          valid: false, 
+          message: "Failed to validate license. Please try again."
+        };
+      }
+
+      if (!data.customers || data.customers.length === 0) {
+        console.log("NO CUSTOMERS");
+        return { 
+          valid: false, 
+          message: "No valid license found. Please contact support."
+        };
+      }
+
+      const customer = data.customers.find(
+        (c: any) => c.license_key === storedLicenseKey
+      );
+
+      if (!customer) {
+        console.log("LICENSE KEY NOT FOUND IN API");
+        return { 
+          valid: false, 
+          message: "Invalid license key. Please reactivate your license.",
+          needsActivation: true
+        };
+      }
+
+      console.log("Customer Found:", customer.customer_name);
+
+      const licenseStatus = String(customer.status || "").toLowerCase().trim();
+      console.log("License Status:", licenseStatus);
+
+      if (licenseStatus !== "active") {
+        console.log("LICENSE NOT ACTIVE");
+        return { 
+          valid: false, 
+          message: `License is ${customer.status}. Please contact support.`
+        };
+      }
+
+      const isDeviceRegistered = customer.registered_devices?.some(
+        (device: any) => device.device_id === currentDeviceId
+      );
+      
+      console.log("Device Registered:", isDeviceRegistered);
+      
+      if (!isDeviceRegistered) {
+        console.log("DEVICE NOT REGISTERED");
+        return { 
+          valid: false, 
+          message: "This device is not registered. Please activate your license again.",
+          needsActivation: true
+        };
+      }
+
+      console.log("=== LICENSE VALID ===");
+      console.log("Returning clientId:", customer.client_id);
+      
+      return {
+        valid: true,
+        customerName: customer.customer_name,
+        clientId: customer.client_id,
+        licenseKey: customer.license_key
+      };
+
+    } catch (error) {
+      console.error("VALIDATION ERROR:", error);
+      return { 
+        valid: false, 
+        message: "Network error. Please check your connection and try again."
+      };
+    }
+  };
+
   const handleLogin = async () => {
     let hasError = false;
 
@@ -62,23 +220,72 @@ export default function Login() {
 
     setLoading(true);
 
-    if (debugMode) {
-      await runDebugLogin();
-    } else {
-      await runNormalLogin();
+    try {
+      console.log("=== LOGIN PROCESS START ===");
+      
+      const licenseValidation = await validateLicenseWithAPI();
+      
+      console.log("License Validation Result:", JSON.stringify(licenseValidation, null, 2));
+      
+      if (!licenseValidation || !licenseValidation.valid) {
+        setLoading(false);
+        console.log("LICENSE VALIDATION FAILED");
+        
+        if (licenseValidation?.needsActivation) {
+          Toast.show({
+            type: "error",
+            text1: "License Not Valid",
+            text2: licenseValidation.message,
+            visibilityTime: 4000,
+          });
+          
+          setTimeout(() => {
+            router.replace("/(auth)/license");
+          }, 1500);
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "License Validation Failed",
+            text2: licenseValidation?.message || "Unknown error",
+            visibilityTime: 4000,
+          });
+        }
+        return;
+      }
+
+      console.log("LICENSE VALIDATED SUCCESSFULLY");
+      console.log("Using Client ID:", licenseValidation.clientId);
+      
+      // Store the clientId for the API calls
+      await AsyncStorage.setItem("clientId", licenseValidation.clientId);
+      
+      if (debugMode) {
+        await runDebugLogin(licenseValidation.clientId);
+      } else {
+        await runNormalLogin(licenseValidation.clientId);
+      }
+      
+    } catch (error) {
+      console.error("LOGIN ERROR:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "An unexpected error occurred. Please try again.",
+      });
+      setLoading(false);
     }
   };
 
-  const runNormalLogin = async () => {
+  const runNormalLogin = async (clientId: string) => {
     try {
       console.log("📄 Creating API instance for login...");
       const api = await createEnhancedAPI();
       
       const commonPayloads = [
-        { userid: username, password },
-        { username, password },
-        { email: username, password },
-        { login: username, password },
+        { userid: username, password, client_id: clientId },
+        { username, password, client_id: clientId },
+        { email: username, password, client_id: clientId },
+        { login: username, password, client_id: clientId },
       ];
 
       let success = false;
@@ -127,12 +334,15 @@ export default function Login() {
     }
   };
 
-  const runDebugLogin = async () => {
+  const runDebugLogin = async (clientId: string) => {
     try {
       const api = await createDebugAPI();
-      const payloads = debugLoginPayloads(username, password);
+      const basePayloads = debugLoginPayloads(username, password);
       
-      console.log("🔍 DEBUG MODE: Testing all payload formats");
+      // Add client_id to all payloads
+      const payloads = basePayloads.map(p => ({ ...p, client_id: clientId }));
+      
+      console.log("🔍 DEBUG MODE: Testing all payload formats with clientId:", clientId);
       
       const results = [];
       
@@ -242,7 +452,7 @@ export default function Login() {
               <View style={styles.titleSection}>
                 <Text style={styles.appTitle}>TRACKER</Text>
                 <View style={styles.titleUnderline} />
-                <Text style={styles.subtitle}>Stock tracking Managment </Text>
+                <Text style={styles.subtitle}>Stock Tracking Management</Text>
               </View>
 
               {debugMode && (
@@ -385,7 +595,7 @@ export default function Login() {
                   <View style={styles.debugInfo}>
                     <Ionicons name="information-circle" size={16} color="#FF9800" />
                     <Text style={styles.debugInfoText}>
-                      Testing all field name combinations
+                      Testing all field name combinations with client_id
                     </Text>
                   </View>
                 )}
